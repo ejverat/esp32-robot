@@ -158,12 +158,25 @@ cd firmware && cargo build
 El firmware ya está generado con los valores por defecto del template oficial esp-rs
 (`MCU=esp32`, ESP-IDF `v5.5.3`, target `xtensa-esp32-espidf`).
 
-## 8. Decisiones abiertas / pendientes de validar
+## 8. Decisiones cerradas (hardware y alcance)
 
-- Modelo exacto de ESP32 y cámara (¿ESP32-CAM? ¿ESP32 + OV2640? ¿resolución objetivo?).
-- Driver de motores y alimentación (afecta al esquema de control PWM).
-- Si se requiere acceso desde fuera de la red local (implica TLS + autenticación).
-- Target de latencia y FPS del video (define si MJPEG basta o hace falta WebRTC).
-- Dónde correrá la IA: en el servidor (recomendado) vs. dispositivo externo.
+Cerradas con el hardware real del proyecto: **kit Keyestudio KS5024** (4WD Camera Robot
+Car), ya probado con firmware C++ de referencia en
+[ejverat/esp-cam-robot-car](https://github.com/ejverat/esp-cam-robot-car).
 
-Estas decisiones se cerrarán en la próxima iteración de este documento.
+| Decisión | Resolución |
+|----------|------------|
+| **Placa y cámara** | **ESP32-CAM (AI-Thinker)** con **OV2640**. Pinout confirmado por el firmware C++ de referencia. |
+| **Driver de motores** | **L298N** on-board, 2 canales PWM (LEDC): GPIO 12/13 (izq.) y 14/15 (der.). LED flash: GPIO 4. Sin encoder/IMU en el kit. |
+| **Alcance de red** | **LAN primero** (fases 1–3, `ws://` sin auth); **acceso remoto después** → la fase 4 (WSS/TLS + auth por token) se mantiene en el roadmap. |
+| **Video objetivo** | **MJPEG VGA (640×480), calidad JPEG 10, ~10–15 FPS, `fb_count=2` con PSRAM** — ya validado en el firmware C++. **WebRTC queda descartado** para este hardware. |
+| **Agente IA** | Corre en el **servidor** (`ort`/`candle`), como cliente más del hub. El ESP32-CAM no tiene margen de cómputo para inferencia. |
+
+**Implicaciones de diseño que quedan fijadas:**
+
+- La cámara consume casi todos los GPIO; los 4 pines de motores + flash son lo disponible.
+  No hay pines libres para IMU/encoders → la telemetría inicial es batería (ADC), RSSI WiFi
+  y estado de motores.
+- El esquema de control de motores replica el del firmware C++: `analogWrite` por pin
+  (IN1/IN2 por lado), sin pin STBY.
+- Resolución/FPS del stream se ajustan por `cmd:camera` dentro del rango que da PSRAM.

@@ -297,7 +297,7 @@ flowchart TB
 
 | Fase | Alcance | Entregable |
 |------|---------|------------|
-| 0 | Validar hardware y decisiones abiertas | Documento actualizado |
+| 0 | ~~Validar hardware y decisiones abiertas~~ **(hecho)** | Hardware fijado: kit Keyestudio KS5024 (ESP32-CAM AI-Thinker + OV2640, L298N, 4WD). Ver README §8 |
 | 1 (MVP) | Firmware: motores + WebSocket; servidor: hub; web: control básico | Teleoperación LAN |
 | 2 | Cámara MJPEG + visor en la web | Video en vivo |
 | 3 | Telemetría completa + persistencia | Panel de estado |
@@ -309,11 +309,12 @@ flowchart TB
 
 ## 9. Riesgos y decisiones abiertas
 
-- **Latencia de video en ESP32:** MJPEG puede quedar corto; tener WebRTC como plan B.
-- **Recursos del ESP32:** cámara + WiFi + WebSocket + control compiten por CPU/memoria; definir
-  FPS/resolución objetivos.
+- **Recursos del ESP32-CAM:** cámara + WiFi + WebSocket + control compiten por CPU/memoria.
+  La referencia C++ corre VGA q10 con PSRAM; monitorear FPS reales con el firmware Rust y
+  bajar a HVGA/QVGA si hace falta. WebRTC descartado para este hardware (ver README §8).
+- **Pocos GPIO libres:** la cámara consume casi todo; solo hay 4 pines de motores + flash.
+  Sin IMU/encoders en el kit → telemetría limitada a batería (ADC), RSSI y estado de motores.
 - **Carga del servidor:** el relay de video escala con el número de clientes; considerar
   *fan-out* binario o un *media server* dedicado si crece.
 - **Sincronización de comandos:** definir política de prioridad (operador vs. IA) y *watchdog*
   de parada si se pierde la conexión.
-- **Modelo de cámara y motores por confirmar** (ver README §8).
