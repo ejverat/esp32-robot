@@ -18,6 +18,10 @@
           targetPkgs = p: with p; [
             # herramientas esp-rs
             rustup
+            # rust-analyzer real de nixpkgs: el toolchain 'esp' NO lo incluye y
+            # el proxy de rustup cae en recursión infinita buscándolo en /usr/bin.
+            # hiPrio para que este binario gane sobre el proxy de rustup en el FHS.
+            (hiPrio rust-analyzer)
             espup
             espflash        # incluye `espflash` y `cargo-espflash`
             ldproxy
@@ -85,6 +89,9 @@
             name = "esp32-robot-firmware";
             buildInputs = with pkgs; [
               rustup          # shims cargo/rustc que respetan rust-toolchain.toml
+              # el toolchain 'esp' no incluye rust-analyzer; hiPrio para que
+              # este gane sobre el proxy de rustup
+              (hiPrio rust-analyzer)
               espup           # instala el toolchain Rust de Espressif (Xtensa/RISC-V)
               espflash        # incluye `espflash` y `cargo-espflash`
               ldproxy         # linker proxy para los targets espidf

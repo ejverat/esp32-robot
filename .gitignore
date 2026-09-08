@@ -15,3 +15,5 @@ firmware/sdkconfig.old
 firmware/.embuild/
 firmware/.espressif/
 firmware/build/
+# Local Pi runtime state
+.atl/
