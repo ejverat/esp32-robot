@@ -106,12 +106,26 @@ cargo run          # escucha en http://127.0.0.1:8080  (health en /health)
 
 ### 7.2 Firmware (ESP32)
 
+> ⚠️ **`nix develop` (sin argumentos) entra al shell del SERVIDOR.** Para firmware usa siempre
+> `nix develop .#firmware`. Si compilas firmware con el Rust estándar verás el error
+> `could not create LLVM TargetMachine for triple: xtensa-none-elf` (el Rust estándar no soporta
+> el backend Xtensa).
+
 El toolchain de Rust para Xtensa se instala **una sola vez** con `espup`:
 
 ```sh
 nix develop .#firmware
-espup install              # descarga el toolchain esp (una única vez)
-# salir y volver a entrar para cargar ~/export-esp.sh
+
+# 1) verificar el toolchain (clave: debe decir "esp", NO "1.97.x")
+rustup toolchain list      # debe listar "esp"
+rustc --version            # debe mostrar una versión "esp"
+
+# 2) si "esp" no aparece, instalarlo (una única vez) y reentrar:
+espup install
+exit                       # salir...
+nix develop .#firmware     # ...y volver a entrar para cargar ~/export-esp.sh
+
+# 3) compilar
 cd firmware
 cargo build                # target: xtensa-esp32-espidf
 cargo espflash flash       # para flashear (con el ESP32 conectado)

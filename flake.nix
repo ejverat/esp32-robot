@@ -54,10 +54,16 @@
               if [ -f "$HOME/export-esp.sh" ]; then
                 . "$HOME/export-esp.sh"
               else
-                echo "⚠️  [firmware] Toolchain esp no detectado. Ejecuta una única vez: espup install"
-                echo "   (vuelve a entrar al shell para cargar \$HOME/export-esp.sh)"
+                echo "⚠️  [firmware] Toolchain esp no detectado. Ejecuta una única vez:"
+                echo "   espup install"
+                echo "   (luego sal y vuelve a entrar: exit && nix develop .#firmware)"
               fi
               echo "🔧 [firmware] target: xtensa-esp32-espidf"
+              if rustup toolchain list 2>/dev/null | grep -q '^esp'; then
+                echo "   ✅ toolchain 'esp' instalado"
+              else
+                echo "   ❌ toolchain 'esp' NO instalado — verifica: rustup toolchain list"
+              fi
               echo "   cd firmware && cargo build"
             '';
           };
