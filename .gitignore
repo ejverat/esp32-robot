@@ -1,0 +1,17 @@
+# Rust
+target/
+**/target/
+
+# Nix
+result
+result-*
+
+# direnv
+.direnv/
+
+# ESP-IDF / esp-rs (firmware)
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/.embuild/
+firmware/.espressif/
+firmware/build/
