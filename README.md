@@ -94,7 +94,8 @@ Cada componente tiene su *dev environment* definido en el `flake.nix` raíz. Req
 | Comando | Qué hace |
 |---------|----------|
 | `nix develop` (o `nix develop .#server`) | Entorno del **servidor**: Rust (cargo, rustc, clippy, rust-analyzer), cargo-watch, openssl. |
-| `nix develop .#firmware` | Entorno del **firmware**: rustup, espup, espflash, cargo-espflash, ldproxy, cargo-generate, libclang, cmake/ninja. |
+| `nix develop .#firmware-fhs` | Entorno del **firmware (FHS)**: igual que `firmware` pero en un sandbox FHS — **recomendado en NixOS** (no requiere nix-ld). |
+| `nix develop .#firmware` | Entorno del **firmware**: rustup, espup, espflash, cargo-espflash, ldproxy, cargo-generate, libclang, cmake/ninja (en NixOS requiere nix-ld). |
 
 ### 7.1 Servidor
 
@@ -106,24 +107,31 @@ cargo run          # escucha en http://127.0.0.1:8080  (health en /health)
 
 ### 7.2 Firmware (ESP32)
 
-> ⚠️ **`nix develop` (sin argumentos) entra al shell del SERVIDOR.** Para firmware usa siempre
-> `nix develop .#firmware`. Si compilas firmware con el Rust estándar verás el error
+> ⚠️ **`nix develop` (sin argumentos) entra al shell del SERVIDOR.** Para firmware usa siempre un
+> shell de firmware (abajo). Si compilas firmware con el Rust estándar verás el error
 > `could not create LLVM TargetMachine for triple: xtensa-none-elf` (el Rust estándar no soporta
 > el backend Xtensa).
 
-El toolchain de Rust para Xtensa se instala **una sola vez** con `espup`:
+Hay dos formas de entrar al entorno de firmware. **En NixOS recomendamos `.#firmware-fhs`**
+(entorno FHS), porque no requiere tocar la configuración del sistema.
+
+#### Opción A — `.#firmware-fhs` (FHS, sin cambios al sistema)
+
+Ejecuta el toolchain `esp` dentro de un sandbox con la jerarquía de Linux estándar
+(`/lib64/ld-linux-x86-64.so.2`, `/usr/lib`, …), de modo que los binarios genéricos del
+toolchain funcionan **sin `nix-ld`**.
 
 ```sh
-nix develop .#firmware
+nix develop .#firmware-fhs
 
-# 1) verificar el toolchain (clave: debe decir "esp", NO "1.97.x")
+# 1) verificar el toolchain (debe listar "esp")
 rustup toolchain list      # debe listar "esp"
-rustc --version            # debe mostrar una versión "esp"
+rustc +esp --version       # debe imprimir la versión (sin error stub-ld)
 
 # 2) si "esp" no aparece, instalarlo (una única vez) y reentrar:
 espup install
-exit                       # salir...
-nix develop .#firmware     # ...y volver a entrar para cargar ~/export-esp.sh
+exit
+nix develop .#firmware-fhs
 
 # 3) compilar
 cd firmware
@@ -131,21 +139,24 @@ cargo build                # target: xtensa-esp32-espidf
 cargo espflash flash       # para flashear (con el ESP32 conectado)
 ```
 
+#### Opción B — `.#firmware` (requiere `nix-ld` en NixOS)
+
+Binarios del toolchain ejecutándose directamente en el sistema. En NixOS hay que habilitar
+`nix-ld`:
+
+```nix
+programs.nix-ld.enable = true;
+```
+
+reconstruye con `sudo nixos-rebuild switch` y luego:
+
+```sh
+nix develop .#firmware
+cd firmware && cargo build
+```
+
 El firmware ya está generado con los valores por defecto del template oficial esp-rs
 (`MCU=esp32`, ESP-IDF `v5.5.3`, target `xtensa-esp32-espidf`).
-
-> 🐧 **NixOS:** los binarios del toolchain `esp` son para Linux genérico. Si al hacer
-> `rustc --version` ves `Could not start dynamically linked executable … stub-ld`, habilita
-> `nix-ld` en tu configuración de NixOS:
->
-> ```nix
-> programs.nix-ld.enable = true;
-> ```
->
-> y reconstruye con `sudo nixos-rebuild switch`. Si más adelante faltara alguna librería
-> (`libgmp`, `libmpfr`, `libmpc`, `libncurses`, …), agrégala con
-> `programs.nix-ld.libraries = with pkgs; [ gmp mpfr libmpc ncurses ];` (se concatena con las
-> librerías por defecto).
 
 ## 8. Decisiones abiertas / pendientes de validar
 
