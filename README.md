@@ -134,6 +134,19 @@ cargo espflash flash       # para flashear (con el ESP32 conectado)
 El firmware ya está generado con los valores por defecto del template oficial esp-rs
 (`MCU=esp32`, ESP-IDF `v5.5.3`, target `xtensa-esp32-espidf`).
 
+> 🐧 **NixOS:** los binarios del toolchain `esp` son para Linux genérico. Si al hacer
+> `rustc --version` ves `Could not start dynamically linked executable … stub-ld`, habilita
+> `nix-ld` en tu configuración de NixOS:
+>
+> ```nix
+> programs.nix-ld.enable = true;
+> ```
+>
+> y reconstruye con `sudo nixos-rebuild switch`. Si más adelante faltara alguna librería
+> (`libgmp`, `libmpfr`, `libmpc`, `libncurses`, …), agrégala con
+> `programs.nix-ld.libraries = with pkgs; [ gmp mpfr libmpc ncurses ];` (se concatena con las
+> librerías por defecto).
+
 ## 8. Decisiones abiertas / pendientes de validar
 
 - Modelo exacto de ESP32 y cámara (¿ESP32-CAM? ¿ESP32 + OV2640? ¿resolución objetivo?).
