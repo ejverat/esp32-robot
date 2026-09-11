@@ -158,6 +158,16 @@ cd firmware && cargo build
 El firmware ya está generado con los valores por defecto del template oficial esp-rs
 (`MCU=esp32`, ESP-IDF `v5.5.3`, target `xtensa-esp32-espidf`).
 
+> 🔐 **Credenciales en NVS.** Las credenciales WiFi (`wifi.ssid`, `wifi.password`), la dirección
+> del hub (`hub.url`) y el `robot_id` se guardan en la partición **NVS**. En el primer arranque se
+> persisten los valores por defecto compilados (placeholders `CHANGE_ME_*`); en arranques
+> posteriores siempre gana el valor guardado en NVS. Para volver a valores de fábrica (borrar
+> NVS): `cargo espflash erase-flash` y re-flashea a continuación.
+>
+> ⚠️ **Alimentación / brownout.** Antes de flashear usa una fuente con corriente suficiente y un
+> cable corto; los picos de la radio WiFi pueden disparar el detector de *brownout* en una
+> ESP32-CAM alimentada por un USB débil.
+
 ## 8. Decisiones cerradas (hardware y alcance)
 
 Cerradas con el hardware real del proyecto: **kit Keyestudio KS5024** (4WD Camera Robot
