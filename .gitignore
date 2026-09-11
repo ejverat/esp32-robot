@@ -17,3 +17,4 @@ firmware/.espressif/
 firmware/build/
 # Local Pi runtime state
 .atl/
+.pi/gentle-ai/
