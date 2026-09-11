@@ -1,0 +1,86 @@
+# OpenSpec / SDD project configuration — esp32-robot
+#
+# Owned by the SDD init phase. Later phases READ this file; treat the SDD
+# configuration (schema, testing, phases) as authoritative and do not rewrite it
+# destructively. Update only safe derived context when explicitly necessary.
+
+schema: spec-driven-development
+
+project:
+  name: esp32-robot
+  purpose: >-
+    Monorepo in Rust to control a 4WD robot car (kit Keyestudio KS5024: ESP32-CAM
+    AI-Thinker + OV2640 camera, L298N motor driver) from a web panel: remote
+    control, MJPEG video streaming, telemetry. Future goal: autonomous driving via
+    a server-side AI agent.
+  language: Rust
+  context_file: openspec/project.md
+  layout:
+    server:    central hub (Axum + Tokio, WebSocket relay by robot_id)
+    firmware:  ESP32 firmware (esp-rs + ESP-IDF 5.5.3, target xtensa-esp32-espidf)
+    web:       (future) web panel (Leptos -> WASM)
+    ai:        (future) AI agent (ort / candle), server-side
+
+architecture:
+  model: hub
+  summary: >-
+    A central Rust server (Axum + Tokio) relays WebSocket messages between the
+    ESP32 (which connects as a WebSocket client) and browsers/AI clients. Routing
+    is keyed by robot_id. Video is MJPEG frames over binary WebSocket. The future
+    AI agent is just another hub client: it consumes video + telemetry and
+    publishes movement commands.
+
+conventions:
+  technical_artifacts: en   # code, SDD/OpenSpec artifacts
+  user_facing_docs: es      # README.md, docs/architecture.md (current)
+  commit_style: Spanish conventional style (e.g. "Docs:", "Infra:", "Implementar ...")
+  code_comments: es         # existing Rust source comments are in Spanish
+
+testing:
+  strict_tdd: true
+  test_command: "cd server && cargo test"
+  test_shell: "nix develop .#server"
+  runner: cargo test (unit + e2e WebSocket via tokio-tungstenite)
+  tdd_scope: server-side and host-testable code
+  firmware:
+    note: >-
+      firmware/ is cross-compiled for the Xtensa target; host-side `cargo test` is
+      NOT possible. Firmware changes are validated by cross-compilation
+      (`cd firmware && cargo build` inside `nix develop .#firmware-fhs`) plus
+      on-device flashing/checks. TDD (RED/GREEN/REFACTOR) does NOT apply to
+      firmware-only code.
+    build_command: "cd firmware && cargo build"
+    build_shell: "nix develop .#firmware-fhs"
+    flash_command: "cd firmware && cargo espflash flash"
+
+phases:
+  # Gentle AI / OpenSpec SDD pipeline. Changes live under openspec/changes/<name>/;
+  # the init phase does NOT create any change.
+  sequence:
+    - init       # openspec/config.yaml + openspec/project.md (project context)
+    - clarify    # scope, constraints, acceptance criteria, non-goals
+    - explore    # context building / scout when context-heavy
+    - proposal   # openspec/changes/<name>/proposal.md
+    - spec       # openspec/changes/<name>/specs/<capability>/spec.md
+    - design     # design.md
+    - tasks      # tasks.md (reviewable work units)
+    - apply      # implementation under strict TDD where tests exist
+    - verify     # verify report
+    - archive    # archive notes
+  rules:
+    - Strict TDD (RED -> GREEN -> TRIANGULATE -> REFACTOR) for server-side and
+      host-testable code; record evidence.
+    - Firmware-only changes use cross-compilation + on-device verification instead
+      of TDD (see testing.firmware).
+    - Preserve human-controlled gates: consent, authorization, security,
+      destructive/publishing, ambiguous scope, and size:exception.
+    - One parent session orchestrates; child subagents receive concrete phase work
+      and do not spawn further subagents.
+
+delivery:
+  # Derived snapshot of the canonical session preflight (.pi/gentle-ai/sdd-preflight.json).
+  execution_mode: auto
+  artifact_store: openspec
+  strategy: ask-on-risk       # pause and ask on review-budget risk
+  review_budget_changed_lines: 400
+  exception_ok: false         # size:exception requires explicit human acceptance
