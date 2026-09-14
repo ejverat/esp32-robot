@@ -9,6 +9,7 @@ use esp_idf_svc::ws::client::{
 };
 
 use crate::config::Config;
+use crate::motors::{MotorSender, MotorSignal};
 use crate::net::{EventSender, NetEvent};
 
 #[derive(Debug)]
@@ -72,10 +73,24 @@ pub fn start(
     uri: &str,
     cfg: &EspWebSocketClientConfig<'static>,
     tx: EventSender,
+    motor_tx: MotorSender,
 ) -> Result<EspWebSocketClient<'static>, EspIOError> {
     EspWebSocketClient::new(uri, cfg, Duration::from_secs(5), move |event| {
         log_event(event);
         tx.send(NetEvent::WsEvent).ok();
+        if let Ok(event) = event {
+            match &event.event_type {
+                WebSocketEventType::Text(s) => {
+                    motor_tx.send(MotorSignal::Text(s.to_string())).ok();
+                }
+                WebSocketEventType::Disconnected
+                | WebSocketEventType::Close(_)
+                | WebSocketEventType::Closed => {
+                    motor_tx.send(MotorSignal::ConnectionLost).ok();
+                }
+                _ => {}
+            }
+        }
     })
 }
 

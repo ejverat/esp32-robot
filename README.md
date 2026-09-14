@@ -167,6 +167,15 @@ El firmware ya está generado con los valores por defecto del template oficial e
 > ⚠️ **Alimentación / brownout.** Antes de flashear usa una fuente con corriente suficiente y un
 > cable corto; los picos de la radio WiFi pueden disparar el detector de *brownout* en una
 > ESP32-CAM alimentada por un USB débil.
+>
+> 🤖 **Motores (L298N) — regla dura de alimentación.** **Nunca conectes USB y batería a la vez**:
+> flashea por USB → **desconecta el USB** → conecta la batería. Solo con batería **no hay consola
+> serie**; la verificación de motores se hace por observación física (avance / retroceso / giro,
+> parada al desconectar y *dead-man* ~1 s) y con el robot listado en `curl http://<hub-ip>:8080/robots`.
+> En el banco con USB los motores deben estar **desconectados** (o sin alimentación de motores);
+> nunca se alimentan motores por el USB. Si al avanzar el auto va hacia atrás (o un lado queda
+> invertido), corrige el sentido volteando la constante `INVERT_LEFT`/`INVERT_RIGHT` en
+> `firmware/src/motors.rs` (`false → true`) y re-flashea; **nunca** cambies la convención congelada.
 
 ## 8. Decisiones cerradas (hardware y alcance)
 
