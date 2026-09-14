@@ -16,6 +16,12 @@ Use when flashing, monitoring, or verifying firmware on the physical ESP32-CAM
 
 ## Hard Rules
 
+- **Never have USB and battery connected at the same time** (this rig has no protection
+  against it). On-device motor tests: flash via USB → disconnect USB → connect battery. To
+  re-flash: disconnect battery → connect USB.
+- With battery-only power there is no serial console. Verify motor runs via the hub
+  (`/robots`, telemetry) and the maintainer's physical observation; keep serial verification
+  for USB-only, motors-disconnected benches.
 - Run builds/flashes through the FHS wrapper binary, invoked directly:
   `$(ls -d /nix/store/*-esp32-robot-firmware-fhs/bin/*firmware-fhs | head -1) -c 'cd firmware && cargo build'`.
   `nix develop .#firmware-fhs -c` drops the command (shellHook execs the wrapper).
@@ -39,6 +45,7 @@ Use when flashing, monitoring, or verifying firmware on the physical ESP32-CAM
 | Situation | Action |
 | --- | --- |
 | Need app boot logs | open port → release lines → RTS pulse → read ≥30 s |
+| Testing motors on device | flash via USB → unplug USB → connect battery (never both) |
 | Chip loops in download mode | press RST / replug USB; stop toggling lines |
 | No port permission | ask user for `chmod 666` (or the udev rule) |
 | Verify connectivity | `curl http://<hub-ip>:8080/robots` — robot id appears after WS connect |
